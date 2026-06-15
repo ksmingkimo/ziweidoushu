@@ -35,12 +35,10 @@ export default function RootLayout({
               🧘 紫微君
             </Link>
             <nav className="flex items-center gap-4 text-sm text-gray-600">
-              <Link href="/chart" className="hover:text-purple-700">
-                开始排盘
-              </Link>
-              <Link href="/daily" className="hover:text-purple-700">
-                每日运势
-              </Link>
+              <Link href="/chart" className="hover:text-purple-700">开始排盘</Link>
+              <Link href="/reading" className="hover:text-purple-700">AI 解读</Link>
+              <Link href="/daily" className="hover:text-purple-700">每日运势</Link>
+              <Link href="/profile" className="hover:text-purple-700">个人中心</Link>
             </nav>
           </div>
         </header>
