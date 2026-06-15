@@ -70,14 +70,12 @@ export async function POST(request: NextRequest) {
           // 发送初始事件
           controller.enqueue(encoder.encode('event: start\ndata: {}\n\n'));
 
-          for await (const event of stream) {
-            if (event.type === 'content_block_delta' && 'text' in event.delta) {
-              const text = event.delta.text;
-              fullContent += text;
-              // SSE 格式
-              const data = JSON.stringify({ text });
-              controller.enqueue(encoder.encode(`event: delta\ndata: ${data}\n\n`));
-            }
+          for await (const chunk of stream) {
+            const text = chunk.text;
+            fullContent += text;
+            // SSE 格式
+            const data = JSON.stringify({ text });
+            controller.enqueue(encoder.encode(`event: delta\ndata: ${data}\n\n`));
           }
 
           // 发送完成事件
