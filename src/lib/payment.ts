@@ -123,22 +123,22 @@ export const READING_PACKAGES: ReadingPackage[] = [
     id: 'single',
     name: '单次解读',
     count: 1,
-    price: 2999,  // ¥29.99
+    price: 100,  // ¥1.00
     description: '适合初次体验',
   },
   {
     id: 'pack5',
     name: '5次套餐',
     count: 5,
-    price: 9999,  // ¥99.99
-    description: '每题约¥20，适合深度探索',
+    price: 300,  // ¥3.00
+    description: '每题仅¥0.6，适合深度探索',
     popular: true,
   },
   {
     id: 'pack10',
     name: '10次套餐',
     count: 10,
-    price: 16999, // ¥169.99
-    description: '每题约¥17，适合全面了解',
+    price: 500, // ¥5.00
+    description: '每题仅¥0.5，适合全面了解',
   },
 ];

@@ -152,7 +152,7 @@ function ReadingPageContent() {
               <div className="text-center py-12">
                 <div className="text-5xl mb-4">🔒</div>
                 <h3 className="text-lg font-bold text-gray-800 mb-2">免费次数已用完</h3>
-                <p className="text-gray-500 mb-6">每次解读 ¥29.99，购买套餐更优惠</p>
+                <p className="text-gray-500 mb-6">每次解读 ¥1，5次¥3，10次¥5</p>
                 <Button onClick={handlePayAndRead} className="bg-purple-700 hover:bg-purple-800">
                   购买次数 →
                 </Button>
