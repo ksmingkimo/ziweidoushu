@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: '帮助中心 - 紫微君',
-  description: '紫微君使用教程，手把手教你排盘、AI解读、查看每日运势',
+  description: '紫微君使用教程，手把手教你排盘、AI解读、合盘分析、每日运势',
 };
 
 export default function HelpPage() {
@@ -141,6 +141,42 @@ export default function HelpPage() {
           <p className="mt-3 text-xs text-gray-400">
             ⚠️ 需要先在「排盘」页输入出生信息并生成命盘，才能查看个性化每日运势。
           </p>
+        </Section>
+
+        <Section
+          icon="💑"
+          title="合盘分析怎么用？"
+          anchor="compatibility"
+        >
+          <p className="text-sm text-gray-700 mb-3">
+            合盘功能帮你分析<strong>两个人的性格契合度和关系走势</strong>，适合情侣、夫妻或任何你关心的人。
+          </p>
+          <ol className="space-y-2 text-sm text-gray-700">
+            <li>
+              <strong>1. 本人信息自动填入</strong>
+              <p className="text-gray-500 mt-0.5">如果你之前已经排过盘，本人的出生信息会自动读取，无需重复填写。</p>
+            </li>
+            <li>
+              <strong>2. 填写对方信息</strong>
+              <p className="text-gray-500 mt-0.5">输入对方的出生年月日、时间和性别，点击「计算命盘」。</p>
+            </li>
+            <li>
+              <strong>3. 查看命盘摘要</strong>
+              <p className="text-gray-500 mt-0.5">排盘完成后，双方卡片的底部会显示命宫、五行局和夫妻宫主星，方便快速对比。</p>
+            </li>
+            <li>
+              <strong>4. AI 合盘解读</strong>
+              <p className="text-gray-500 mt-0.5">
+                点击「AI 合盘解读」，系统从四个维度分析：
+                <span className="block mt-1 space-x-2">
+                  <span className="inline-block bg-purple-50 text-purple-700 text-xs px-2 py-0.5 rounded">性格契合度</span>
+                  <span className="inline-block bg-purple-50 text-purple-700 text-xs px-2 py-0.5 rounded">感情模式</span>
+                  <span className="inline-block bg-purple-50 text-purple-700 text-xs px-2 py-0.5 rounded">优势与挑战</span>
+                  <span className="inline-block bg-purple-50 text-purple-700 text-xs px-2 py-0.5 rounded">相处建议</span>
+                </span>
+              </p>
+            </li>
+          </ol>
         </Section>
 
         <Section
