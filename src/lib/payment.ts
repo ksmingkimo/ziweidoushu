@@ -1,110 +1,117 @@
-// PayJS 聚合支付客户端
-// 文档: https://payjs.cn/docs/
+// 支付宝当面付 — 扫码支付
+// 文档: https://opendocs.alipay.com/open/194/105072
 
-interface PayJSConfig {
-  mchid: string;
-  key: string;
+import crypto from 'crypto';
+
+interface AlipayConfig {
+  appId: string;
+  privateKey: string;
+  alipayPublicKey: string;
   notifyUrl: string;
 }
 
-interface CreateOrderParams {
-  totalFee: number;     // 金额（分）
-  outTradeNo: string;   // 商户订单号
-  body: string;         // 商品描述
-  attach?: string;      // 附加数据
-  type?: 'alipay' | 'wechat'; // 支付方式，默认微信
-}
-
-interface PayJSResponse {
-  return_code: number;  // 1=成功
-  return_msg: string;
-  payjs_order_id: string;
-  qrcode: string;       // 二维码支付链接
-  code_url: string;     // 微信 code_url
-  sign: string;
-}
-
-const PAYJS_API = 'https://payjs.cn/api/native';
-
-function getConfig(): PayJSConfig {
+function getConfig(): AlipayConfig {
   return {
-    mchid: process.env.PAYJS_MCHID || '',
-    key: process.env.PAYJS_KEY || '',
-    notifyUrl: process.env.PAYJS_NOTIFY_URL || '',
+    appId: process.env.ALIPAY_APP_ID || '',
+    privateKey: (process.env.ALIPAY_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+    alipayPublicKey: (process.env.ALIPAY_PUBLIC_KEY || '').replace(/\\n/g, '\n'),
+    notifyUrl: process.env.ALIPAY_NOTIFY_URL || 'https://ziweidoushu-xi.vercel.app/api/payment/notify',
   };
 }
 
-/** 简单签名（MD5） */
-function createSign(params: Record<string, string>, key: string): string {
-  // PayJS 签名规则：按 key 排序，拼接 key=value&key=value...&key=密钥
+const ALIPAY_GATEWAY = 'https://openapi.alipay.com/gateway.do';
+
+/** 生成签名 */
+function sign(params: Record<string, string>, privateKey: string): string {
   const sortedKeys = Object.keys(params).sort();
-  const signStr = sortedKeys
-    .filter(k => params[k] !== '' && params[k] !== undefined)
+  const content = sortedKeys
+    .filter(k => params[k] !== '' && params[k] !== undefined && k !== 'sign')
     .map(k => `${k}=${params[k]}`)
     .join('&');
-  // 使用 crypto 计算 MD5
-  const crypto = require('crypto');
-  return crypto.createHash('md5').update(signStr + key).digest('hex').toUpperCase();
+  return crypto
+    .createSign('RSA-SHA256')
+    .update(content)
+    .sign(privateKey, 'base64');
 }
 
-/** 创建支付订单 */
-export async function createPayOrder(params: CreateOrderParams): Promise<{
-  success: boolean;
-  payjsOrderId?: string;
-  qrcode?: string;
-  error?: string;
-}> {
+/** 当面付 - 预创建订单，返回二维码 */
+export async function createPayOrder(params: {
+  totalFee: number;
+  outTradeNo: string;
+  body: string;
+  attach?: string;
+}): Promise<{ success: boolean; qrcode?: string; error?: string }> {
   const config = getConfig();
 
-  if (!config.mchid || !config.key) {
+  if (!config.appId || !config.privateKey) {
     return { success: false, error: '支付服务未配置' };
   }
 
-  const body: Record<string, string> = {
-    mchid: config.mchid,
-    total_fee: String(params.totalFee),
+  const bizContent = JSON.stringify({
     out_trade_no: params.outTradeNo,
-    body: params.body,
+    total_amount: (params.totalFee / 100).toFixed(2),
+    subject: params.body,
+    body: params.attach || '',
+  });
+
+  const requestParams: Record<string, string> = {
+    app_id: config.appId,
+    method: 'alipay.trade.precreate',
+    charset: 'utf-8',
+    sign_type: 'RSA2',
+    timestamp: new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''),
+    version: '1.0',
     notify_url: config.notifyUrl,
+    biz_content: bizContent,
   };
 
-  if (params.attach) body.attach = params.attach;
-  if (params.type) body.type = params.type;
-
-  body.sign = createSign(body, config.key);
+  requestParams.sign = sign(requestParams, config.privateKey);
 
   try {
-    const response = await fetch(PAYJS_API, {
+    const formBody = new URLSearchParams(requestParams).toString();
+    const response = await fetch(ALIPAY_GATEWAY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(body).toString(),
+      body: formBody,
     });
 
-    const data: PayJSResponse = await response.json();
+    const data = await response.json();
+    const precreate = data.alipay_trade_precreate_response;
 
-    if (data.return_code === 1) {
-      return {
-        success: true,
-        payjsOrderId: data.payjs_order_id,
-        qrcode: data.qrcode || data.code_url,
-      };
+    if (precreate?.code === '10000') {
+      // 当面付返回的是二维码链接，需要转成二维码图片
+      const qrcode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(precreate.qr_code)}`;
+      return { success: true, qrcode };
     }
 
-    return { success: false, error: data.return_msg || '支付下单失败' };
+    return { success: false, error: precreate?.sub_msg || '创建订单失败' };
   } catch (error) {
     return { success: false, error: '支付服务异常' };
   }
 }
 
-/** 验证支付回调签名 */
+/** 验证支付宝异步通知签名 */
 export function verifyNotifySign(params: Record<string, string>): boolean {
   const config = getConfig();
-  const receivedSign = params.sign;
-  const sign = createSign(
-    Object.fromEntries(Object.entries(params).filter(([k]) => k !== 'sign')),
-    config.key,
-  );
-  return sign === receivedSign;
+  const receivedSign = params.sign || '';
+  const verifyParams = { ...params };
+  delete verifyParams.sign;
+  delete verifyParams.sign_type;
+
+  try {
+    const content = Object.keys(verifyParams)
+      .filter(k => k !== 'sign' && k !== 'sign_type')
+      .sort()
+      .map(k => `${k}=${decodeURIComponent(verifyParams[k])}`)
+      .join('&');
+
+    return crypto
+      .createVerify('RSA-SHA256')
+      .update(content)
+      .verify(config.alipayPublicKey, receivedSign, 'base64');
+  } catch {
+    return false;
+  }
 }
 
 // ---- 套餐定义 ----
@@ -113,32 +120,13 @@ export interface ReadingPackage {
   id: string;
   name: string;
   count: number;
-  price: number;  // 分
+  price: number;
   description: string;
   popular?: boolean;
 }
 
 export const READING_PACKAGES: ReadingPackage[] = [
-  {
-    id: 'single',
-    name: '单次解读',
-    count: 1,
-    price: 100,  // ¥1.00
-    description: '适合初次体验',
-  },
-  {
-    id: 'pack5',
-    name: '5次套餐',
-    count: 5,
-    price: 300,  // ¥3.00
-    description: '每题仅¥0.6，适合深度探索',
-    popular: true,
-  },
-  {
-    id: 'pack10',
-    name: '10次套餐',
-    count: 10,
-    price: 500, // ¥5.00
-    description: '每题仅¥0.5，适合全面了解',
-  },
+  { id: 'single', name: '单次解读', count: 1, price: 100, description: '¥1，适合初次体验' },
+  { id: 'pack5', name: '5次套餐', count: 5, price: 300, description: '¥3，每次仅¥0.6', popular: true },
+  { id: 'pack10', name: '10次套餐', count: 10, price: 500, description: '¥5，每次仅¥0.5' },
 ];

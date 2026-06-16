@@ -30,7 +30,6 @@ export async function POST(request: Request) {
         success: true,
         data: {
           orderNo: outTradeNo,
-          payjsOrderId: result.payjsOrderId,
           qrcode: result.qrcode,
           amount: pkg.price,
           packageName: pkg.name,
