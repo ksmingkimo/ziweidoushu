@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import Link from 'next/link';
+import DesktopQRCode from '@/components/guide/DesktopQRCode';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -50,6 +51,8 @@ export default function RootLayout({
         </header>
 
         <main className="flex-1">{children}</main>
+
+        <DesktopQRCode />
 
         <footer className="border-t py-8 text-center text-sm text-gray-500">
           <div className="max-w-4xl mx-auto px-4">
