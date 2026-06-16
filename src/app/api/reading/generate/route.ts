@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
       palaceName,
       targetYear,
       targetMonth,
+      partnerChart,    // 合盘：对方的命盘
       forceRefresh = false,
     } = body;
 
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       palaceName,
       targetYear,
       targetMonth,
+      partnerChart,
     });
 
     // 创建 ReadableStream 用于 SSE
