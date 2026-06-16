@@ -21,6 +21,54 @@ const READING_TYPES = [
 
 type StreamEvent = { text?: string; done?: boolean; error?: string; cached?: boolean };
 
+const READING_TYPE_LABELS: Record<string, string> = {
+  'natal': '🔮 本命盘',
+  'palace_ming': '🏠 命宫详解',
+  'palace_fuq': '💑 夫妻宫',
+  'palace_caibo': '💰 财帛宫',
+  'palace_shiye': '💼 事业宫',
+  'daxian': '📊 大限运势',
+  'liunian': '📅 流年运势',
+  'liuyue': '🌙 流月运势',
+};
+
+interface HistoryEntry {
+  id: string;
+  date: string;
+  type: string;
+  typeLabel: string;
+  chartInfo: string;
+  preview: string;
+  content: string;
+}
+
+function saveReadingToHistory(type: string, content: string, chart: ChartData) {
+  if (!content.trim()) return;
+  try {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const entry: HistoryEntry = {
+      id: `r_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      date: dateStr,
+      type,
+      typeLabel: READING_TYPE_LABELS[type] || type,
+      chartInfo: `命宫${chart.mingPalace} · ${chart.elementBureau} · ${chart.palaces[chart.mingPalace].mainStars.join('、')}`,
+      preview: content.replace(/[#*`\n]/g, '').slice(0, 80),
+      content,
+    };
+
+    const saved = sessionStorage.getItem('readingHistory');
+    const history: HistoryEntry[] = saved ? JSON.parse(saved) : [];
+    history.unshift(entry);
+
+    // 只保留最近 50 条
+    if (history.length > 50) history.length = 50;
+
+    sessionStorage.setItem('readingHistory', JSON.stringify(history));
+  } catch { /* ignore */ }
+}
+
 function ReadingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,6 +78,7 @@ function ReadingPageContent() {
   const [streaming, setStreaming] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const readingRef = useRef<HTMLDivElement>(null);
+  const fullContentRef = useRef('');
 
   useEffect(() => {
     const stored = sessionStorage.getItem('lastChart');
@@ -52,6 +101,7 @@ function ReadingPageContent() {
 
     setStreaming(true);
     setReading('');
+    fullContentRef.current = '';
     sessionStorage.setItem('freeReadings', String(usedFree + 1));
 
     try {
@@ -83,9 +133,22 @@ function ReadingPageContent() {
           if (line.startsWith('data: ')) {
             try {
               const data: StreamEvent = JSON.parse(line.slice(6));
-              if (data.text) setReading(prev => prev + data.text);
-              if (data.done) setStreaming(false);
-              if (data.error) { setReading(prev => prev + `\n\n❌ ${data.error}`); setStreaming(false); }
+              if (data.text) {
+                setReading(prev => prev + data.text);
+                fullContentRef.current += data.text;
+              }
+              if (data.done) {
+                setStreaming(false);
+                saveReadingToHistory(selectedType, fullContentRef.current, chart);
+              }
+              if (data.error) {
+                setReading(prev => prev + `\n\n❌ ${data.error}`);
+                setStreaming(false);
+                // 即使出错也保存已生成的部分
+                if (fullContentRef.current) {
+                  saveReadingToHistory(selectedType, fullContentRef.current, chart);
+                }
+              }
             } catch { /* ignore parse errors */ }
           }
         }

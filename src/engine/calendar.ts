@@ -59,3 +59,13 @@ export function getYearStemBranch(year: number): { stem: HeavenlyStem; branch: E
     branch: lunar.getYearZhi() as EarthlyBranch,
   };
 }
+
+/** 获取指定日期的日干支 */
+export function getDayStemBranch(year: number, month: number, day: number): { stem: HeavenlyStem; branch: EarthlyBranch } {
+  const solar = Solar.fromYmd(year, month, day);
+  const lunar = Lunar.fromSolar(solar);
+  return {
+    stem: lunar.getDayGan() as HeavenlyStem,
+    branch: lunar.getDayZhi() as EarthlyBranch,
+  };
+}

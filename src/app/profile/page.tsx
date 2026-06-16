@@ -7,10 +7,13 @@ import type { ChartData } from '@/engine/types';
 import Link from 'next/link';
 
 interface HistoryItem {
+  id: string;
   date: string;
   type: string;
-  chartName: string;
+  typeLabel: string;
+  chartInfo: string;
   preview: string;
+  content: string;
 }
 
 export default function ProfilePage() {
@@ -90,7 +93,7 @@ export default function ProfilePage() {
             <Card key={i} className="p-4 hover:bg-gray-50 cursor-pointer transition-colors">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-medium text-gray-800 text-sm">{item.type}</p>
+                  <p className="font-medium text-gray-800 text-sm">{item.typeLabel}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{item.preview.slice(0, 80)}...</p>
                 </div>
                 <span className="text-xs text-gray-400 whitespace-nowrap ml-2">{item.date}</span>
