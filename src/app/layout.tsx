@@ -55,6 +55,9 @@ export default function RootLayout({
           <div className="max-w-4xl mx-auto px-4">
             <p>紫微君 · AI 命理解读 · 仅供参考</p>
             <p className="mt-1">命理是参考，人生在自己手中 👐</p>
+            <p className="mt-3 text-xs text-gray-400">
+              Copyright © 2026 天心软件开发股份有限公司 · 郭三铭 · 随手做
+            </p>
           </div>
         </footer>
       </body>
