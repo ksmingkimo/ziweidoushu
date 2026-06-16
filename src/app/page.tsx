@@ -15,6 +15,11 @@ export default function HomePage() {
         >
           开始排盘 ✨
         </Link>
+        <p className="mt-4">
+          <Link href="/help" className="text-purple-600 hover:underline text-sm">
+            📖 不知道怎么用？查看使用教程 →
+          </Link>
+        </p>
       </section>
 
       <section className="w-full max-w-4xl px-4 py-16 grid md:grid-cols-3 gap-8">
