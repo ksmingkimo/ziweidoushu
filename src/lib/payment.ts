@@ -84,12 +84,21 @@ export async function createPayOrder(params: {
       return { success: true, qrcode };
     }
 
-    // 调试：打印完整支付宝响应
-    console.error('Alipay error:', JSON.stringify(data));
+    // 支付宝错误有两种格式：
+    // 1. 业务级错误：alipay_trade_precreate_response.code != 10000
+    // 2. 网关级错误：error_response（签名错误、参数缺失等）
+    const errRes = data.error_response;
+    const errMsg = precreate?.sub_msg
+      || errRes?.sub_msg
+      || precreate?.msg
+      || errRes?.msg
+      || '未知错误';
+    const errCode = precreate?.code || errRes?.code || 'N/A';
+    const errSubCode = precreate?.sub_code || errRes?.sub_code || '';
+
     return {
       success: false,
-      error: precreate?.sub_msg
-        || `支付宝错误 [${precreate?.code}]: ${precreate?.msg || '未知错误'}`,
+      error: `支付宝错误 [${errCode}${errSubCode ? '/' + errSubCode : ''}]: ${errMsg}`,
     };
   } catch (error) {
     console.error('Alipay fetch error:', error);
