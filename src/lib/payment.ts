@@ -84,8 +84,15 @@ export async function createPayOrder(params: {
       return { success: true, qrcode };
     }
 
-    return { success: false, error: precreate?.sub_msg || '创建订单失败' };
+    // 调试：打印完整支付宝响应
+    console.error('Alipay error:', JSON.stringify(data));
+    return {
+      success: false,
+      error: precreate?.sub_msg
+        || `支付宝错误 [${precreate?.code}]: ${precreate?.msg || '未知错误'}`,
+    };
   } catch (error) {
+    console.error('Alipay fetch error:', error);
     return { success: false, error: '支付服务异常' };
   }
 }
