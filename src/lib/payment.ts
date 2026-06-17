@@ -13,8 +13,8 @@ interface AlipayConfig {
 function getConfig(): AlipayConfig {
   return {
     appId: process.env.ALIPAY_APP_ID || '',
-    privateKey: (process.env.ALIPAY_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
-    alipayPublicKey: (process.env.ALIPAY_PUBLIC_KEY || '').replace(/\\n/g, '\n'),
+    privateKey: process.env.ALIPAY_PRIVATE_KEY || '',
+    alipayPublicKey: process.env.ALIPAY_PUBLIC_KEY || '',
     notifyUrl: process.env.ALIPAY_NOTIFY_URL || 'https://ziweidoushu-xi.vercel.app/api/payment/notify',
   };
 }
