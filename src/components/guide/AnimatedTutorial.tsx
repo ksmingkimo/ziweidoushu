@@ -29,6 +29,11 @@ const steps: Step[] = [
     subtitle: '结合命盘，每日个性化运势',
     screen: <DailyScreen />,
   },
+  {
+    title: '5. 合盘分析',
+    subtitle: '双人命盘对比，缘分深度解读',
+    screen: <CompatibilityScreen />,
+  },
 ];
 
 export default function AnimatedTutorial() {
@@ -265,6 +270,69 @@ function DailyScreen() {
           &quot;今天的努力，是明天的根基&quot;
         </p>
       </div>
+    </div>
+  );
+}
+
+function CompatibilityScreen() {
+  return (
+    <div className="p-4 h-full flex flex-col">
+      <p className="text-xs font-bold text-purple-800 text-center mb-2">合盘分析 💑</p>
+      <p className="text-[10px] text-gray-500 text-center mb-2">两人命盘深度对比</p>
+
+      {/* 双人卡片 */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="bg-white rounded-xl border border-pink-200 p-2 text-center">
+          <div className="w-6 h-6 rounded-full bg-pink-100 flex items-center justify-center mx-auto mb-1">
+            <span className="text-xs">♐</span>
+          </div>
+          <p className="text-[9px] font-bold text-gray-800">本人</p>
+          <p className="text-[7px] text-gray-400">1990-06-15</p>
+          <p className="text-[7px] text-purple-600">命宫寅 · 火六局</p>
+          <div className="flex gap-0.5 justify-center mt-1">
+            <span className="text-[6px] bg-purple-50 text-purple-600 px-1 rounded">紫微</span>
+            <span className="text-[6px] bg-pink-50 text-pink-600 px-1 rounded">天府</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl border border-blue-200 p-2 text-center">
+          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-1">
+            <span className="text-xs">♉</span>
+          </div>
+          <p className="text-[9px] font-bold text-gray-800">对方</p>
+          <p className="text-[7px] text-gray-400">1992-03-20</p>
+          <p className="text-[7px] text-purple-600">命宫申 · 土五局</p>
+          <div className="flex gap-0.5 justify-center mt-1">
+            <span className="text-[6px] bg-blue-50 text-blue-600 px-1 rounded">天相</span>
+            <span className="text-[6px] bg-cyan-50 text-cyan-600 px-1 rounded">天机</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 维度评分 */}
+      <div className="space-y-1.5 flex-1">
+        {[
+          { icon: '🧠', label: '性格契合', score: 72 },
+          { icon: '💞', label: '感情模式', score: 85 },
+          { icon: '⚡', label: '优势互补', score: 66 },
+          { icon: '🤝', label: '相处建议', score: 79 },
+        ].map(item => (
+          <div key={item.label} className="flex items-center gap-2 bg-white rounded-lg p-1.5 border border-gray-100">
+            <span className="text-[10px]">{item.icon}</span>
+            <span className="text-[9px] text-gray-700 flex-1">{item.label}</span>
+            <div className="flex-1 bg-gray-200 rounded-full h-1">
+              <div
+                className="h-1 rounded-full bg-gradient-to-r from-pink-400 to-purple-500"
+                style={{ width: `${item.score}%` }}
+              />
+            </div>
+            <span className="text-[9px] font-bold text-gray-700">{item.score}%</span>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-center text-[8px] text-gray-400 mt-2">
+        AI 从四维度综合分析两人关系
+      </p>
     </div>
   );
 }

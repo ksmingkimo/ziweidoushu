@@ -207,7 +207,7 @@ export default function HelpPage() {
           </div>
           <ul className="mt-4 space-y-1 text-sm text-gray-600">
             <li>✅ <strong>3 次免费试用</strong> — 新用户有 3 次免费解读机会，无需付费</li>
-            <li>✅ <strong>支付宝扫码支付</strong> — 支持支付宝当面付，安全便捷</li>
+            <li>✅ <strong>微信扫码支付</strong> — 微信扫码即可，无需绑定</li>
             <li>✅ <strong>次数永久有效</strong> — 购买的次数不会过期</li>
           </ul>
         </Section>
@@ -240,7 +240,7 @@ export default function HelpPage() {
             />
             <FaqItem
               q="支付支持微信吗？"
-              a="目前只支持支付宝当面付。支付宝生成的二维码可以用支付宝 App 扫码支付。如果微信急需，后续会考虑接入。"
+              a="目前支持微信扫码支付。扫描二维码完成支付后点击「我已完成支付」即可到账。"
             />
           </div>
         </Section>

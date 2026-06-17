@@ -1,40 +1,39 @@
-// 支付宝当面付 — 扫码支付
-// 文档: https://opendocs.alipay.com/open/194/105072
+// PayJS 支付 — 扫码支付（个人可用，无需营业执照）
+// 文档: https://payjs.cn/docs/
 
 import crypto from 'crypto';
 
-interface AlipayConfig {
-  appId: string;
-  privateKey: string;
-  alipayPublicKey: string;
+interface PayJSConfig {
+  mchid: string;
+  key: string;
   notifyUrl: string;
 }
 
-function getConfig(): AlipayConfig {
+function getConfig(): PayJSConfig {
   return {
-    appId: process.env.ALIPAY_APP_ID || '',
-    privateKey: process.env.ALIPAY_PRIVATE_KEY || '',
-    alipayPublicKey: process.env.ALIPAY_PUBLIC_KEY || '',
-    notifyUrl: process.env.ALIPAY_NOTIFY_URL || 'https://ziweidoushu-xi.vercel.app/api/payment/notify',
+    mchid: process.env.PAYJS_MCHID || '',
+    key: process.env.PAYJS_KEY || '',
+    notifyUrl: process.env.PAYJS_NOTIFY_URL || 'https://ziweidoushu-xi.vercel.app/api/payment/notify',
   };
 }
 
-const ALIPAY_GATEWAY = 'https://openapi.alipay.com/gateway.do';
+const PAYJS_API = 'https://payjs.cn/api/native';
 
-/** 生成签名 */
-function sign(params: Record<string, string>, privateKey: string): string {
+/** PayJS MD5 签名：所有参数按 key 排序 → 拼接 → 追加密钥 → MD5 */
+function sign(params: Record<string, string>, key: string): string {
   const sortedKeys = Object.keys(params).sort();
   const content = sortedKeys
     .filter(k => params[k] !== '' && params[k] !== undefined && k !== 'sign')
     .map(k => `${k}=${params[k]}`)
     .join('&');
   return crypto
-    .createSign('RSA-SHA256')
-    .update(content)
-    .sign(privateKey, 'base64');
+    .createHash('md5')
+    .update(content + '&key=' + key)
+    .digest('hex')
+    .toUpperCase();
 }
 
-/** 当面付 - 预创建订单，返回二维码 */
+/** 创建扫码支付订单，返回二维码 */
 export async function createPayOrder(params: {
   totalFee: number;
   outTradeNo: string;
@@ -43,93 +42,62 @@ export async function createPayOrder(params: {
 }): Promise<{ success: boolean; qrcode?: string; error?: string; debug?: unknown }> {
   const config = getConfig();
 
-  if (!config.appId || !config.privateKey) {
+  if (!config.mchid || !config.key) {
     return {
       success: false,
       error: '支付服务未配置',
-      debug: { appId: !!config.appId, privateKey: !!config.privateKey },
+      debug: { mchid: !!config.mchid, key: !!config.key },
     };
   }
 
-  const bizContent = JSON.stringify({
-    out_trade_no: params.outTradeNo,
-    total_amount: (params.totalFee / 100).toFixed(2),
-    subject: params.body,
-    body: params.attach || '',
-  });
-
   const requestParams: Record<string, string> = {
-    app_id: config.appId,
-    method: 'alipay.trade.precreate',
-    charset: 'utf-8',
-    sign_type: 'RSA2',
-    timestamp: new Date().toISOString().replace(/T/, ' ').replace(/\..+/, ''),
-    version: '1.0',
+    mchid: config.mchid,
+    total_fee: String(params.totalFee), // 单位：分
+    out_trade_no: params.outTradeNo,
+    body: params.body,
+    attach: params.attach || '',
     notify_url: config.notifyUrl,
-    biz_content: bizContent,
   };
 
+  requestParams.sign = sign(requestParams, config.key);
+
   try {
-    requestParams.sign = sign(requestParams, config.privateKey);
-    const formBody = new URLSearchParams(requestParams).toString();
-    const response = await fetch(ALIPAY_GATEWAY, {
+    const response = await fetch(PAYJS_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formBody,
+      body: new URLSearchParams(requestParams).toString(),
     });
 
     const data = await response.json();
-    const precreate = data.alipay_trade_precreate_response;
 
-    if (precreate?.code === '10000') {
-      // 当面付返回的是二维码链接，需要转成二维码图片
-      const qrcode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(precreate.qr_code)}`;
+    if (data.return_code === 1) {
+      // code_url 是支付链接，转成二维码图片
+      const qrcode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.code_url)}`;
       return { success: true, qrcode };
     }
 
-    // 支付宝错误有两种格式：
-    // 1. 业务级错误：alipay_trade_precreate_response.code != 10000
-    // 2. 网关级错误：error_response（签名错误、参数缺失等）
-    const errRes = data.error_response;
-    const errMsg = precreate?.sub_msg
-      || errRes?.sub_msg
-      || precreate?.msg
-      || errRes?.msg
-      || '未知错误';
-    const errCode = precreate?.code || errRes?.code || 'N/A';
-    const errSubCode = precreate?.sub_code || errRes?.sub_code || '';
-
     return {
       success: false,
-      error: `支付宝错误 [${errCode}${errSubCode ? '/' + errSubCode : ''}]: ${errMsg}`,
+      error: data.return_msg || data.msg || '未知错误',
       debug: data,
     };
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error);
-    console.error('Alipay error:', errMsg);
+    console.error('PayJS error:', errMsg);
     return { success: false, error: `支付异常: ${errMsg}`, debug: errMsg };
   }
 }
 
-/** 验证支付宝异步通知签名 */
+/** 验证 PayJS 异步通知签名 */
 export function verifyNotifySign(params: Record<string, string>): boolean {
   const config = getConfig();
-  const receivedSign = params.sign || '';
+  const receivedSign = (params.sign || '').toUpperCase();
   const verifyParams = { ...params };
   delete verifyParams.sign;
-  delete verifyParams.sign_type;
 
   try {
-    const content = Object.keys(verifyParams)
-      .filter(k => k !== 'sign' && k !== 'sign_type')
-      .sort()
-      .map(k => `${k}=${decodeURIComponent(verifyParams[k])}`)
-      .join('&');
-
-    return crypto
-      .createVerify('RSA-SHA256')
-      .update(content)
-      .verify(config.alipayPublicKey, receivedSign, 'base64');
+    const computedSign = sign(verifyParams, config.key);
+    return computedSign === receivedSign;
   } catch {
     return false;
   }

@@ -37,15 +37,10 @@ export async function POST(request: Request) {
       });
     }
 
-    // 返回详细错误信息用于调试
     return NextResponse.json(
       {
         error: result.error || '创建订单失败',
-        debug: result.debug || {
-          appId: process.env.ALIPAY_APP_ID ? '已配置' : '未配置',
-          privateKey: process.env.ALIPAY_PRIVATE_KEY ? `已配置(${process.env.ALIPAY_PRIVATE_KEY.length}字符)` : '未配置',
-          publicKey: process.env.ALIPAY_PUBLIC_KEY ? `已配置(${process.env.ALIPAY_PUBLIC_KEY.length}字符)` : '未配置',
-        },
+        debug: result.debug || { error: '支付服务未配置' },
       },
       { status: 500 },
     );

@@ -92,9 +92,11 @@ function ReadingPageContent() {
   const handleStartReading = async () => {
     if (!chart) return;
 
-    // 检查是否需要付费（模拟：每用户有3次免费）
+    // 先扣购买的次数，再扣免费的
+    const purchased = parseInt(sessionStorage.getItem('purchasedCredits') || '0');
     const usedFree = parseInt(sessionStorage.getItem('freeReadings') || '0');
-    if (usedFree >= 3) {
+
+    if (purchased <= 0 && usedFree >= 3) {
       setShowPayment(true);
       return;
     }
@@ -102,7 +104,12 @@ function ReadingPageContent() {
     setStreaming(true);
     setReading('');
     fullContentRef.current = '';
-    sessionStorage.setItem('freeReadings', String(usedFree + 1));
+
+    if (purchased > 0) {
+      sessionStorage.setItem('purchasedCredits', String(purchased - 1));
+    } else {
+      sessionStorage.setItem('freeReadings', String(usedFree + 1));
+    }
 
     try {
       const response = await fetch('/api/reading/generate', {
@@ -230,7 +237,12 @@ function ReadingPageContent() {
                   开始 AI 解读 ✨
                 </Button>
                 <p className="text-xs text-gray-400 mt-3">
-                  剩余免费次数：{3 - parseInt(sessionStorage.getItem('freeReadings') || '0')} 次
+                  {(() => {
+                    const p = parseInt(sessionStorage.getItem('purchasedCredits') || '0');
+                    const f = 3 - parseInt(sessionStorage.getItem('freeReadings') || '0');
+                    if (p > 0) return `剩余次数：${p} 次（已购）+ ${Math.max(0, f)} 次（免费）`;
+                    return `剩余免费次数：${Math.max(0, f)} 次`;
+                  })()}
                 </p>
               </div>
             ) : (
