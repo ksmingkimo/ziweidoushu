@@ -40,11 +40,15 @@ export async function createPayOrder(params: {
   outTradeNo: string;
   body: string;
   attach?: string;
-}): Promise<{ success: boolean; qrcode?: string; error?: string }> {
+}): Promise<{ success: boolean; qrcode?: string; error?: string; debug?: unknown }> {
   const config = getConfig();
 
   if (!config.appId || !config.privateKey) {
-    return { success: false, error: '支付服务未配置' };
+    return {
+      success: false,
+      error: '支付服务未配置',
+      debug: { appId: !!config.appId, privateKey: !!config.privateKey },
+    };
   }
 
   const bizContent = JSON.stringify({
@@ -99,10 +103,11 @@ export async function createPayOrder(params: {
     return {
       success: false,
       error: `支付宝错误 [${errCode}${errSubCode ? '/' + errSubCode : ''}]: ${errMsg}`,
+      debug: data,
     };
   } catch (error) {
     console.error('Alipay fetch error:', error);
-    return { success: false, error: '支付服务异常' };
+    return { success: false, error: '支付服务异常', debug: String(error) };
   }
 }
 
