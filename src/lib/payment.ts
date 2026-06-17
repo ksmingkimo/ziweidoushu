@@ -69,9 +69,8 @@ export async function createPayOrder(params: {
     biz_content: bizContent,
   };
 
-  requestParams.sign = sign(requestParams, config.privateKey);
-
   try {
+    requestParams.sign = sign(requestParams, config.privateKey);
     const formBody = new URLSearchParams(requestParams).toString();
     const response = await fetch(ALIPAY_GATEWAY, {
       method: 'POST',
@@ -106,8 +105,9 @@ export async function createPayOrder(params: {
       debug: data,
     };
   } catch (error) {
-    console.error('Alipay fetch error:', error);
-    return { success: false, error: '支付服务异常', debug: String(error) };
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('Alipay error:', errMsg);
+    return { success: false, error: `支付异常: ${errMsg}`, debug: errMsg };
   }
 }
 
